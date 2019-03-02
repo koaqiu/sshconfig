@@ -1,0 +1,15 @@
+{
+  "name": "sshconfig",
+  "version": "1.0.0",
+  "main": "out/index.js",
+  "author": "KoaQiu",
+  "license": "MIT",
+  "scripts": {
+    "prestart": "tsc",
+    "start": "node .",
+    "postinstall": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^3.3.3333"
+  }
+}
