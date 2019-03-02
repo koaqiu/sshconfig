@@ -11,5 +11,9 @@
   },
   "devDependencies": {
     "typescript": "^3.3.3333"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/koaqiu/sshconfig.git"
   }
 }
