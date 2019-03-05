@@ -1,16 +1,14 @@
 {
-  "name": "sshconfig",
-  "version": "1.0.0",
+  "name": "configssh",
+  "version": "1.0.1",
   "main": "out/index.js",
   "author": "KoaQiu",
   "license": "MIT",
   "scripts": {
-    "prestart": "tsc",
-    "start": "node .",
     "postinstall": "tsc"
   },
   "devDependencies": {
-    "typescript": "^3.3.3333"
+    "@types/node": "^11.10.4"
   },
   "repository": {
     "type": "git",
