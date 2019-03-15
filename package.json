@@ -5,15 +5,19 @@
   "author": "KoaQiu",
   "license": "MIT",
   "scripts": {
-    "postinstall": "tsc"
+    "build": "tsc"
   },
   "bin": {
     "sshcfg": "./out/index.js"
   },
+  "keywords": [
+    "typescript"
+  ],
   "devDependencies": {
     "@types/ali-oss": "6.0.3",
     "@types/md5": "2.1.33",
-    "@types/node": "11.10.4"
+    "@types/node": "11.10.4",
+    "typescript": "^3.0.3"
   },
   "repository": {
     "type": "git",
