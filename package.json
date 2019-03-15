@@ -7,17 +7,20 @@
   "scripts": {
     "postinstall": "tsc"
   },
+  "bin": {
+    "sshcfg": "./out/index.js"
+  },
   "devDependencies": {
-    "@types/ali-oss": "^6.0.3",
-    "@types/md5": "^2.1.33",
-    "@types/node": "^11.10.4"
+    "@types/ali-oss": "6.0.3",
+    "@types/md5": "2.1.33",
+    "@types/node": "11.10.4"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/koaqiu/sshconfig.git"
   },
   "dependencies": {
-    "ali-oss": "^6.1.0",
-    "md5": "^2.2.1"
+    "ali-oss": "6.1.0",
+    "md5": "2.2.1"
   }
 }

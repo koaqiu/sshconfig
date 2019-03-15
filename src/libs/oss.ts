@@ -1,64 +1,87 @@
 import FS from 'fs';
 import oss from 'ali-oss';
 
-const client = new oss({
-    accessKeyId: '0',
-    accessKeySecret: '0',
-    bucket: '0',
-    region: 'oss-cn-shanghai'
-});
+export interface IOssResponse<T> {
+    success: boolean;
+    code: string;
+    status: number;
+    data?: T
+}
+export interface IOssResult {
+    res: oss.NormalSuccessResponse;
+}
+const fixError = <T>(err: any): IOssResponse<T> => {
+    return {
+        success: false,
+        code: err.code,
+        status: err.status
+    }
+}
+const fixSuccess = <T>(data: T & IOssResult): IOssResponse<T> => {
+    return {
+        success: true,
+        code: '',
+        status: data.res.status,
+        data
+    }
+};
+export default class OSS {
+    private client: oss;
+    constructor(options: oss.Options) {
+        this.client = new oss(options);
+    };
 
-const downloadFile = async (objKey: string, localFile?: string | FS.WriteStream): Promise<Buffer | boolean | null> => {
-    const r = await client.get(objKey, localFile).catch(err => err);
-    if (r.code == 'NoSuchKey') {
-        return null;
+    public async downloadFile(objKey: string, localFile?: string | FS.WriteStream): Promise<Buffer | boolean | null> {
+        const r = await this.client.get(objKey, localFile).catch(err => err);
+        if (r.code == 'NoSuchKey') {
+            return null;
+        }
+        return r.content ? r.content : true;
     }
-    return r.content ? r.content : true;
-}
 
-const uploadFile = async (fileToUpload: string | Buffer | FS.ReadStream, objKey: string) => {
-    return await client.put(objKey, fileToUpload).catch(err => err);
-}
-const uploadData = async (data: string | Buffer | FS.ReadStream | any, objKey: string) => {
-    if (data instanceof Buffer || data instanceof FS.ReadStream) {
-        return await uploadFile(data, objKey);
+    public async uploadFile(fileToUpload: string | Buffer | FS.ReadStream, objKey: string) {
+        return await this.client.put(objKey, fileToUpload).catch(err => err);
     }
-    if (typeof data == 'object') {
-        data = JSON.stringify(data);
+    public async uploadData(data: string | Buffer | FS.ReadStream | any, objKey: string) {
+        if (data instanceof Buffer || data instanceof FS.ReadStream) {
+            return await this.uploadFile(data, objKey);
+        }
+        if (typeof data == 'object') {
+            data = JSON.stringify(data);
+        }
+        return await this.uploadFile(Buffer.from(data), objKey);
     }
-    return await uploadFile(Buffer.from(data), objKey);
-}
-const search = async (prefix: string, nextMarker?: string, count = 100) => {
-    //marker: result.nextMarker
-    const query = {
-        prefix, nextMarker, 'max-keys': count
+    public async search(prefix?: string, nextMarker?: string, count = 100) {
+        //marker: result.nextMarker
+        const query = {
+            prefix, nextMarker, 'max-keys': count
+        }
+       
+        let result = await this.client.list(query, {})
+        .then(res => fixSuccess<oss.ListObjectResult>(res))
+        .catch(err => fixError<oss.ListObjectResult>(err));
+        // console.log(result);
+        return result;
     }
-    let result = await client.list(query, {});
-    // console.log(result);
-    return result;
-}
 
-const exists = async (objKey: string) => {
-    let result = await search(objKey);
-    do {
-        if (Array.isArray(result.objects)) {
-            if (result.objects.some(obj => obj.name == objKey)) {
-                return true;
-            } else if (result.isTruncated) {
-                result = await search(objKey, result.nextMarker);
+    public async exists(objKey: string) {
+        let result = await this.search(objKey);
+        if(result.success === false) return false;
+        do {
+            const data = result.data;
+            if(!data) return false;
+            if (Array.isArray(data.objects)) {
+                if (data.objects.some(obj => obj.name == objKey)) {
+                    return true;
+                } else if (data.isTruncated) {
+                    result = await this.search(objKey, data.nextMarker);
+                } else {
+                    return false;
+                }
             } else {
                 return false;
             }
-        } else {
-            return false;
-        }
-    } while (result);
-    return false;
-}
-export default {
-    downloadFile,
-    exists,
-    uploadFile,
-    uploadData,
-    search
+        } while (result);
+        return false;
+    }
 }
