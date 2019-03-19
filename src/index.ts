@@ -175,6 +175,9 @@ const getOss = (options: { [key: string]: any }) => {
             {}
             , readOssConfig(configFile)
             , removeUndefined({ accessKeyId, accessKeySecret, bucket, region })
+            , {
+                secure: true
+            }
         )
     );
     return oss;
