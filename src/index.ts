@@ -338,6 +338,9 @@ const showHelp = () => {
     console.log('  show\t\t显示ssh config配置信息');
     console.log('  get <name>\t\t从云端下载 config配置信息');
     console.log('  put <name>\t\t上传ssh config配置信息到云端');
+    console.log('  remove <name>\t\t删除ssh config配置信息');
+    console.log('  add <name>\t\t添加ssh config配置信息');
+    console.log('  edit <name>\t\t添加ssh config配置信息');
     console.log('  test\t\t测试OSS设置是否成功');
     console.log('参数：');
     commands.showHelp();
