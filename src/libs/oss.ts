@@ -5,16 +5,19 @@ export interface IOssResponse<T> {
     success: boolean;
     code: string;
     status: number;
-    data?: T
+    data?: T,
+    extData?: any
 }
 export interface IOssResult {
     res: oss.NormalSuccessResponse;
 }
 const fixError = <T>(err: any): IOssResponse<T> => {
+    // console.log(err)
     return {
         success: false,
         code: err.code,
-        status: err.status
+        status: err.status,
+        extData: err
     }
 }
 const fixSuccess = <T>(data: T & IOssResult): IOssResponse<T> => {
@@ -30,7 +33,12 @@ export default class OSS {
     constructor(options: oss.Options) {
         this.client = new oss(options);
     };
-
+    public async test(){
+        const result = await this.search('', '', 1)
+        if (result.success === false) {
+            throw new Error('OSS配置错误');
+        }
+    }
     public async downloadFile(objKey: string, localFile?: string | FS.WriteStream): Promise<Buffer | boolean | null> {
         const r = await this.client.get(objKey, localFile).catch(err => err);
         if (r.code == 'NoSuchKey') {
@@ -40,7 +48,9 @@ export default class OSS {
     }
 
     public async uploadFile(fileToUpload: string | Buffer | FS.ReadStream, objKey: string) {
-        return await this.client.put(objKey, fileToUpload).catch(err => err);
+        return await this.client.put(objKey, fileToUpload)
+            .then(res => fixSuccess<oss.PutObjectResult>(res))
+            .catch(err => fixError<oss.PutObjectResult>(err));
     }
     public async uploadData(data: string | Buffer | FS.ReadStream | any, objKey: string) {
         if (data instanceof Buffer || data instanceof FS.ReadStream) {
@@ -60,7 +70,6 @@ export default class OSS {
         let result = await this.client.list(query, {})
         .then(res => fixSuccess<oss.ListObjectResult>(res))
         .catch(err => fixError<oss.ListObjectResult>(err));
-        // console.log(result);
         return result;
     }
 

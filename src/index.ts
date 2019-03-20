@@ -168,20 +168,26 @@ const saveOssConfig = (options: any, file?: string) => {
 }
 const ossObjKeyPrefix = 'appdata/sshconfig/';
 let oss: Oss;
-const getOss = (options: { [key: string]: any }) => {
+const getOss = async (options: { [key: string]: any }) => {
     if (oss) { return oss; }
     const { accessKeyId, accessKeySecret, bucket, region } = options;
     const configFile = getFilePath(options['oss-config']);
-    oss = new Oss(
-        Object.assign(
-            {}
-            , readOssConfig(configFile)
-            , removeUndefined({ accessKeyId, accessKeySecret, bucket, region })
-            , {
-                secure: true
-            }
-        )
-    );
+    try {
+        oss = new Oss(
+            Object.assign(
+                {}
+                , readOssConfig(configFile)
+                , removeUndefined({ accessKeyId, accessKeySecret, bucket, region })
+                , {
+                    secure: true
+                }
+            )
+        );
+        await oss.test();
+    } catch (err) {
+        console.error(err.message);
+        exit(99);
+    }
     return oss;
 }
 
@@ -261,7 +267,7 @@ const testOss = (options: { [key: string]: any }) => {
     return oss;
 }
 const show = async (options: { [key: string]: any }, showLog = false) => {
-    getOss(options);
+    await getOss(options);
     let configAtRemote: IConfigFile;
     if (await oss.exists(ossObjKeyPrefix + 'config')) {
         if (showLog) console.log('读取云端数据...')
@@ -281,7 +287,7 @@ const show = async (options: { [key: string]: any }, showLog = false) => {
                 const objKey = ossObjKeyPrefix + 'keys/' + md5(item.identityFile);
                 if (!await oss.exists(objKey)) {
                     if (showLog) console.log('上传密钥文件到云端...', md5(item.identityFile));
-                    oss.uploadFile(pathJoin(item.identityFile), objKey);
+                    const rrr = await oss.uploadFile(pathJoin(item.identityFile), objKey);
                     if (showLog) console.log('OK')
                 }
             }
@@ -346,7 +352,7 @@ const showHelp = () => {
     console.log('  put <name>\t\t上传ssh config配置信息到云端');
     console.log('  remove <name>\t\t删除ssh config配置信息');
     console.log('  add <name>\t\t添加ssh config配置信息');
-    console.log('  edit <name>\t\t添加ssh config配置信息');
+    console.log('  edit <name>\t\t修改ssh config配置信息');
     console.log('  test\t\t测试OSS设置是否成功');
     console.log('参数：');
     commands.showHelp();
@@ -444,6 +450,22 @@ const testSshService = async (config: IConfigItem) => {
                     } else {
                         console.log('服务器配置错误，请重试')
                         console.error(isOk.stdout)
+                    }
+                }
+                break;
+            case 'edit':
+                {
+                    if (commands.Args.length < 2) {
+                        console.error('缺少参数');
+                        console.error('  edit <name>\t\t修改ssh config配置信息');
+                        return exit(99);
+                    }
+                    const configAtLocal = readSSHConfig();
+                    let name = commands.Args[1];
+                    if (configAtLocal.hosts.some(item => item.name == name) == false) {
+                        console.error(`找不到${name}，请修正后重试`);
+                        r = 99;
+                        break;
                     }
                 }
                 break;
