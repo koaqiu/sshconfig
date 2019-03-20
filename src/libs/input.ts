@@ -72,13 +72,13 @@ export default class ConsoleInput {
 		} while (true);
 		return defaultValue;
 	}
-	public async readBoolean(query: string, defaultValue: boolean) {
-		do {
-			const line = await this.question(query, `${defaultValue}`);
-			if (/^(true|false|1|0|yes|no|y|n)$/ig.test(line)) {
-				return /(true|1|yes)/ig.test(line);
-			}
-		} while (true);
-		return defaultValue;
-	}
+    public async readBoolean(query: string, defaultValue: boolean | 'true' | 'false' | 'yes' | 'no' | 'y' | 'n') {
+        do {
+            const line = await this.question(query, `${defaultValue}`);
+            if (/^(true|false|1|0|yes|no|y|n)$/ig.test(line)) {
+                return /(true|1|yes)/ig.test(line);
+            }
+        } while (true);
+        return defaultValue;
+    }
 }

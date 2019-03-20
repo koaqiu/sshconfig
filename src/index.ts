@@ -2,6 +2,7 @@
 import FS from 'fs';
 import OS from 'os';
 import PATH from 'path';
+import { spawn } from 'child_process';
 import { IConfigFile, IConfigItem } from './types/ssh';
 import Oss from './libs/oss';
 import md5 from 'md5';
@@ -184,6 +185,10 @@ const getOss = (options: { [key: string]: any }) => {
     return oss;
 }
 
+const addSshConfig = (configAtLocal: IConfigFile, config: IConfigItem) => {
+    configAtLocal.hosts.push(config);
+    writeSSHConfig(configAtLocal);
+}
 const getConfig = async (configAtRemote: IConfigFile, configAtLocal: IConfigFile, configName: string) => {
     if (configAtLocal.hosts.some(item => item.name == configName)) {
         return 1;
@@ -349,6 +354,58 @@ const showHelp = () => {
 const exit = (code?: number) => {
     process.exit(code);
 }
+const exec = (cmd: string, args: string[]): Promise<{ code: number, stdout: string }> => {
+    return new Promise((resolove, reject) => {
+        try {
+            const ls = spawn(cmd, args);
+            let log = '';
+            if (ls.stdout) {
+                ls.stdout.on('data', (data) => {
+                    log += `${data}`;
+                });
+            }
+            if (ls.stderr) {
+                ls.stderr.on('data', (data) => {
+                    log += `${data}`;
+                });
+            }
+            ls.on('error', (err) => {
+                resolove({
+                    code: 1,
+                    stdout: err.message
+                });
+            })
+            ls.on('close', (code) => {
+                resolove({
+                    code,
+                    stdout: log
+                });
+            });
+        } catch (err) {
+            resolove({
+                code: 1,
+                stdout: err.message
+            });
+        }
+    });
+}
+const testSshService = async (config: IConfigItem) => {
+    //const r = await exec('ssh', ['-Tq', `${config.user}@${config.host}`, `-p ${config.port}`, `-i ${config.identityFile}`, 'pwd'])
+    const tmpFile = PATH.join(OS.tmpdir(), ['win32'].includes(OS.platform()) ? 't.cmd' : 't.sh');
+    const cmd = [
+        'ssh',
+        `${config.user}@${config.host}`,
+        config.port && config.port != 22 ? `-p ${config.port}` : null,
+        config.identityFile ? `-i ${config.identityFile}` : null,
+        'pwd'
+    ].join(' ');
+    FS.writeFileSync(tmpFile, cmd, { mode: 0o700 });
+    console.log('测试配置中...');
+    console.log(cmd);
+    const r = await exec(tmpFile, []);
+    FS.unlinkSync(tmpFile);
+    return r;
+}
 (async () => {
     if (commands.Args.length == 0) {
         showHelp();
@@ -359,15 +416,36 @@ const exit = (code?: number) => {
                 testOss(commands.Options);
                 return;
             case 'add':
-                const rl = new ConsoleInput();
-                const host = await rl.question('请输入主机名（IP或者域名）');
-                const port = await rl.readNumber('请输入端口', 22);
-                const user = await rl.readLine('请输入用户名', 'root', /^[a-z0-9]+$/ig);
-                const identityFile = await rl.readBoolean('使用密钥（yes|no）', true)
-                    ? await rl.readFileName('请输入密钥文件', '')
-                    : '';
-                console.log(host, port, user, identityFile);
-                rl.close();
+                {
+                    const configAtLocal = readSSHConfig();
+                    const rl = new ConsoleInput();
+                    const name = commands.Args.length > 1 ? commands.Args[1] : await rl.question('请输入配置名称（昵称）');
+                    if (configAtLocal.hosts.some(item => item.name == name)) {
+                        console.error(`${name}已经存在，请重试`);
+                        rl.close();
+                        r = 99;
+                        break;
+                    }
+                    const host = await rl.question('请输入主机名（IP或者域名）');
+                    const port = await rl.readNumber('请输入端口', 22);
+                    const user = await rl.readLine('请输入用户名', 'root', /^[a-z0-9]+$/ig);
+                    const identityFile = await rl.readBoolean('使用密钥（yes|no）', 'y')
+                        ? await rl.readFileName('请输入密钥文件', '')
+                        : '';
+                    rl.close();
+                    const config = {
+                        name, host, port, user, identityFile,
+                        otherConfigs: [],
+                        comments: []
+                    };
+                    const isOk = await testSshService(config);
+                    if (isOk.code === 0) {
+                        addSshConfig(configAtLocal, config);
+                    } else {
+                        console.log('服务器配置错误，请重试')
+                        console.error(isOk.stdout)
+                    }
+                }
                 break;
             case 'show':
                 show(commands.Options, true);
@@ -406,7 +484,8 @@ const exit = (code?: number) => {
             case 2:
                 console.error('找不到目标');
                 exit(r);
-
+            default:
+                exit(r);
         }
     }
 })();
