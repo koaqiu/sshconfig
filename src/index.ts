@@ -6,6 +6,7 @@ import { IConfigFile, IConfigItem } from './types/ssh';
 import Oss from './libs/oss';
 import md5 from 'md5';
 import Commands from './libs/commands';
+import ConsoleInput from './libs/input';
 
 const CURRENT_VERSION = process.env['npm_package_version'] || '1.0.0';
 const removeUndefined = (obj: any) => {
@@ -357,6 +358,17 @@ const exit = (code?: number) => {
             case 'test':
                 testOss(commands.Options);
                 return;
+            case 'add':
+                const rl = new ConsoleInput();
+                const host = await rl.question('请输入主机名（IP或者域名）');
+                const port = await rl.readNumber('请输入端口', 22);
+                const user = await rl.readLine('请输入用户名', 'root', /^[a-z0-9]+$/ig);
+                const identityFile = await rl.readBoolean('使用密钥（yes|no）', true)
+                    ? await rl.readFileName('请输入密钥文件', '')
+                    : '';
+                console.log(host, port, user, identityFile);
+                rl.close();
+                break;
             case 'show':
                 show(commands.Options, true);
                 return;

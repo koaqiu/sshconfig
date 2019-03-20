@@ -5,7 +5,8 @@
   "author": "KoaQiu",
   "license": "MIT",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "start": "yarn build && node . add"
   },
   "bin": {
     "sshcfg": "./out/index.js"
