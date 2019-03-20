@@ -6,7 +6,8 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "start": "yarn build && node . add"
+    "start:dev": "yarn build && node .",
+    "start": "node ."
   },
   "bin": {
     "sshcfg": "./out/index.js"
