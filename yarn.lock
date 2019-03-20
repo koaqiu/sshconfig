@@ -2,12 +2,12 @@
 # yarn lockfile v1
 
 
-"@types/ali-oss@^6.0.3":
+"@types/ali-oss@6.0.3":
   version "6.0.3"
   resolved "http://registry.npm.taobao.org/@types/ali-oss/download/@types/ali-oss-6.0.3.tgz#7b061b60dd00902d5ec7ed5f58685f5a72996689"
   integrity sha1-ewYbYN0AkC1ex+1fWGhfWnKZZok=
 
-"@types/md5@^2.1.33":
+"@types/md5@2.1.33":
   version "2.1.33"
   resolved "http://registry.npm.taobao.org/@types/md5/download/@types/md5-2.1.33.tgz#8c8dba30df4ad0e92296424f08c4898dd808e8df"
   integrity sha1-jI26MN9K0OkilkJPCMSJjdgI6N8=
@@ -19,10 +19,10 @@
   resolved "http://registry.npm.taobao.org/@types/node/download/@types/node-11.11.3.tgz#7c6b0f8eaf16ae530795de2ad1b85d34bf2f5c58"
   integrity sha1-fGsPjq8WrlMHld4q0bhdNL8vXFg=
 
-"@types/node@^11.10.4":
+"@types/node@11.10.4":
   version "11.10.4"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-11.10.4.tgz#3f5fc4f0f322805f009e00ab35a2ff3d6b778e42"
-  integrity sha512-wa09itaLE8L705aXd8F80jnFpxz3Y1/KRHfKsYL2bPc0XF+wEWu8sR9n5bmeu8Ba1N9z2GRNzm/YdHcghLkLKg==
+  resolved "http://registry.npm.taobao.org/@types/node/download/@types/node-11.10.4.tgz?cache=0&other_urls=http%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fnode%2Fdownload%2F%40types%2Fnode-11.10.4.tgz#3f5fc4f0f322805f009e00ab35a2ff3d6b778e42"
+  integrity sha1-P1/E8PMigF8AngCrNaL/PWt3jkI=
 
 "@types/node@^8.0.7":
   version "8.10.44"
@@ -48,7 +48,7 @@ agentkeepalive@^3.4.1:
   dependencies:
     humanize-ms "^1.2.1"
 
-ali-oss@^6.1.0:
+ali-oss@6.1.0:
   version "6.1.0"
   resolved "http://registry.npm.taobao.org/ali-oss/download/ali-oss-6.1.0.tgz#c5a62c42d9424a903781d0555962b087c71fa5fc"
   integrity sha1-xaYsQtlCSpA3gdBVWWKwh8cfpfw=
@@ -491,7 +491,7 @@ lru-cache@^4.1.2:
     pseudomap "^1.0.2"
     yallist "^2.1.2"
 
-md5@^2.2.1:
+md5@2.2.1:
   version "2.2.1"
   resolved "http://registry.npm.taobao.org/md5/download/md5-2.2.1.tgz#53ab38d5fe3c8891ba465329ea23fac0540126f9"
   integrity sha1-U6s41f48iJG6RlMp6iP6wFQBJvk=
@@ -867,6 +867,11 @@ type-check@~0.3.2:
   integrity sha1-WITKtRLPHTVeP7eE8wgEsrUg23I=
   dependencies:
     prelude-ls "~1.1.2"
+
+typescript@^3.0.3:
+  version "3.3.3333"
+  resolved "http://registry.npm.taobao.org/typescript/download/typescript-3.3.3333.tgz?cache=0&other_urls=http%3A%2F%2Fregistry.npm.taobao.org%2Ftypescript%2Fdownload%2Ftypescript-3.3.3333.tgz#171b2c5af66c59e9431199117a3bcadc66fdcfd6"
+  integrity sha1-FxssWvZsWelDEZkRejvK3Gb9z9Y=
 
 unescape@^1.0.1:
   version "1.0.1"
