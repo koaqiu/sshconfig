@@ -101,9 +101,9 @@ const readSSHConfig = () => {
             } else {
                 config.comments.push(line);
             }
-        } else if (/^Host\s(.+)\s{0,}/ig.test(line)) {
+        } else if (/^Host\s{1,}(.+)\s{0,}/ig.test(line)) {
             // begin host
-            const regName = /^Host\s(.+)\s{0,}/ig.exec(line);
+            const regName = /^Host\s{1,}(.+)\s{0,}/ig.exec(line);
             const hostItem: IConfigItem = {
                 comments: [],
                 name: regName ? regName[1] : '',
@@ -119,11 +119,11 @@ const readSSHConfig = () => {
                     hostItem.comments.push(line);
                     continue;
                 }
-                const regName = /^Host\s(.+)\s{0,}/ig.test(line);
-                const regHost = /^Hostname\s(.+)\s{0,}/ig.exec(line);
-                const regUser = /^User\s(.+)\s{0,}/ig.exec(line);
-                const regPort = /^Port\s(\d+)\s{0,}/ig.exec(line);
-                const regIdentityFile = /^IdentityFile\s(.+)\s{0,}/ig.exec(line);
+                const regName = /^Host\s{1,}(.+)\s{0,}/ig.test(line);
+                const regHost = /^Hostname\s{1,}(.+)\s{0,}/ig.exec(line);
+                const regUser = /^User\s{1,}(.+)\s{0,}/ig.exec(line);
+                const regPort = /^Port\s{1,}(\d+)\s{0,}/ig.exec(line);
+                const regIdentityFile = /^IdentityFile\s{1,}(.+)\s{0,}/ig.exec(line);
                 if (regHost) {
                     hostItem.host = regHost[1];
                 } else if (regUser) {
@@ -270,6 +270,12 @@ const show = async (options: { [key: string]: any }, showLog = false) => {
     await getOss(options);
     let configAtRemote: IConfigFile;
     if (await oss.exists(ossObjKeyPrefix + 'config')) {
+        if (options.save) {
+            // TODO: 保存配置
+            // const { accessKeyId, accessKeySecret, bucket, region } = options;
+            // const configFile = getFilePath(options['oss-config']);
+            // saveOssConfig({ accessKeyId, accessKeySecret, bucket, region }, configFile);
+        }
         if (showLog) console.log('读取云端数据...')
         const buffer = await oss.downloadFile(ossObjKeyPrefix + 'config');
         configAtRemote = JSON.parse(buffer!.toString());
@@ -462,11 +468,14 @@ const testSshService = async (config: IConfigItem) => {
                     }
                     const configAtLocal = readSSHConfig();
                     let name = commands.Args[1];
-                    if (configAtLocal.hosts.some(item => item.name == name) == false) {
+                    const found = configAtLocal.hosts.filter(item => item.name == name);
+                    if (found.length < 1) {
                         console.error(`找不到${name}，请修正后重试`);
                         r = 99;
                         break;
                     }
+                    const config = found[0];
+                    
                 }
                 break;
             case 'show':
