@@ -34,10 +34,11 @@ export default class OSS {
         this.client = new oss(options);
     };
     public async test(){
-        const result = await this.search('', '', 1)
-        if (result.success === false) {
-            throw new Error('OSS配置错误');
-        }
+        const result = await this.search(undefined, undefined, 1)
+        // if (result.success === false) {
+        //     throw new Error('OSS配置错误');
+        // }
+        return result;
     }
     public async downloadFile(objKey: string, localFile?: string | FS.WriteStream): Promise<Buffer | boolean | null> {
         const r = await this.client.get(objKey, localFile).catch(err => err);

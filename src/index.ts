@@ -147,7 +147,7 @@ const readSSHConfig = () => {
     return config;
 }
 
-const configPath = pathJoin('~/.ssh', 'ossconfig.json');
+const defaultConfigPath = pathJoin('~/.ssh', 'ossconfig.json');
 const getFilePath = (file?: string) => {
     if (!file) return file;
     if (/^[a-z]:/ig.test(file) || /^[\/\\]/ig.test(file)) {
@@ -157,33 +157,39 @@ const getFilePath = (file?: string) => {
     return PATH.resolve(process.cwd(), file);
 }
 const readOssConfig = (file?: string) => {
-    if (!FS.existsSync(file || configPath)) {
+    if (!FS.existsSync(file || defaultConfigPath)) {
         return null;
     }
-    return JSON.parse(FS.readFileSync(file || configPath).toString());
+    return JSON.parse(FS.readFileSync(file || defaultConfigPath).toString());
 }
 const saveOssConfig = (options: any, file?: string) => {
-    existsFolder(PATH.dirname(file || configPath), true);
-    FS.writeFileSync(file || configPath, JSON.stringify(options));
+    existsFolder(PATH.dirname(file || defaultConfigPath), true);
+    FS.writeFileSync(file || defaultConfigPath, JSON.stringify(options));
 }
 const ossObjKeyPrefix = 'appdata/sshconfig/';
 let oss: Oss;
-const getOss = async (options: { [key: string]: any }) => {
-    if (oss) { return oss; }
+const getOss = async (options: { [key: string]: any }, force = false) => {
+    if (oss && force === false) { return oss; }
     const { accessKeyId, accessKeySecret, bucket, region } = options;
     const configFile = getFilePath(options['oss-config']);
+    const ossConfig = Object.assign(
+        {}
+        , readOssConfig(configFile)
+        , removeUndefined({ accessKeyId, accessKeySecret, bucket, region })
+    );
+    oss = new Oss({
+        ...ossConfig,
+        secure: true
+    });
     try {
-        oss = new Oss(
-            Object.assign(
-                {}
-                , readOssConfig(configFile)
-                , removeUndefined({ accessKeyId, accessKeySecret, bucket, region })
-                , {
-                    secure: true
-                }
-            )
-        );
-        await oss.test();
+        const r = await oss.test();
+        if(r.success === false){
+            console.error('OSS错误，信息：', r.code);
+            exit(99);
+        }
+        if(options.save && (accessKeyId || accessKeySecret || bucket || region)){
+            saveOssConfig(ossConfig, configFile);
+        }
     } catch (err) {
         console.error(err.message);
         exit(99);
@@ -244,38 +250,15 @@ const putConfig = async (configAtLocal: IConfigFile, configAtRemote: IConfigFile
     return 0;
 }
 const testOss = (options: { [key: string]: any }) => {
-    const { accessKeyId, accessKeySecret, bucket, region } = options;
-    const configFile = getFilePath(options['oss-config']);
-    const oss = new Oss(
-        Object.assign(
-            {}
-            , readOssConfig(configFile)
-            , removeUndefined({ accessKeyId, accessKeySecret, bucket, region })
-        )
-    );
     console.log('测试OSS设置')
-    oss.search(undefined, undefined, 1).then(result => {
-        if (result.success) {
-            console.log('OK');
-            if (options.save) {
-                saveOssConfig({ accessKeyId, accessKeySecret, bucket, region }, configFile);
-            }
-        } else {
-            console.error('OSS错误，信息：', result.code);
-        }
-    });
+    getOss(options, true);
+    console.log('OK');
     return oss;
 }
 const show = async (options: { [key: string]: any }, showLog = false) => {
     await getOss(options);
     let configAtRemote: IConfigFile;
     if (await oss.exists(ossObjKeyPrefix + 'config')) {
-        if (options.save) {
-            // TODO: 保存配置
-            // const { accessKeyId, accessKeySecret, bucket, region } = options;
-            // const configFile = getFilePath(options['oss-config']);
-            // saveOssConfig({ accessKeyId, accessKeySecret, bucket, region }, configFile);
-        }
         if (showLog) console.log('读取云端数据...')
         const buffer = await oss.downloadFile(ossObjKeyPrefix + 'config');
         configAtRemote = JSON.parse(buffer!.toString());
@@ -320,7 +303,7 @@ const commands = new Commands()
         name: 'oss-config',
         type: 'file',
         comment: 'OSS配置文件，JSON文件',
-        default: configPath
+        default: defaultConfigPath
     })
     .addParam({
         name: 'accessKeyId',
