@@ -183,11 +183,11 @@ const getOss = async (options: { [key: string]: any }, force = false) => {
     });
     try {
         const r = await oss.test();
-        if(r.success === false){
+        if (r.success === false) {
             console.error('OSS错误，信息：', r.code);
             exit(99);
         }
-        if(options.save && (accessKeyId || accessKeySecret || bucket || region)){
+        if (options.save && (accessKeyId || accessKeySecret || bucket || region)) {
             saveOssConfig(ossConfig, configFile);
         }
     } catch (err) {
@@ -201,14 +201,15 @@ const addSshConfig = (configAtLocal: IConfigFile, config: IConfigItem) => {
     configAtLocal.hosts.push(config);
     writeSSHConfig(configAtLocal);
 }
-const getConfig = async (configAtRemote: IConfigFile, configAtLocal: IConfigFile, configName: string) => {
-    if (configAtLocal.hosts.some(item => item.name == configName)) {
+const getConfig = async (configAtRemote: IConfigFile, configAtLocal: IConfigFile, configName: string, force: boolean) => {
+    if (configAtLocal.hosts.some(item => item.name == configName) && force === false) {
         return 1;
     }
     const found = configAtRemote.hosts.filter(item => item.name == configName);
     if (found.length == 0) {
         return 2;
     }
+    // TODO 覆盖
     configAtLocal.hosts = configAtLocal.hosts.concat(found).sort(orderFunc);
     for (let i = 0; i < found.length; i++) {
         const item = found[i];
@@ -225,14 +226,15 @@ const getConfig = async (configAtRemote: IConfigFile, configAtLocal: IConfigFile
     writeSSHConfig(configAtLocal);
     return 0;
 }
-const putConfig = async (configAtLocal: IConfigFile, configAtRemote: IConfigFile, configName: string) => {
-    if (configAtRemote.hosts.some(item => item.name == configName)) {
+const putConfig = async (configAtLocal: IConfigFile, configAtRemote: IConfigFile, configName: string, force: boolean) => {
+    if (configAtRemote.hosts.some(item => item.name == configName) && force === false) {
         return 1;
     }
     const found = configAtLocal.hosts.filter(item => item.name == configName);
     if (found.length == 0) {
         return 2;
     }
+    // TODO 覆盖
     configAtRemote.hosts = configAtRemote.hosts.concat(found).sort(orderFunc);
     for (let i = 0; i < found.length; i++) {
         const item = found[i];
@@ -289,11 +291,11 @@ const show = async (options: { [key: string]: any }, showLog = false) => {
         // console.log(configAtLocal);
         console.log(`本地配置有${configAtLocal.hosts.length}个主机`);
         configAtLocal.hosts.map(item => {
-            console.log('\t', item.name, item.host, item.identityFile)
+            console.log('\t', item.name, `${item.user}@${item.host}`, (item.port && item.port !== 22) ? item.port : '', item.identityFile)
         })
         console.log(`云端配置有${configAtRemote.hosts.length}个主机`);
         configAtRemote.hosts.map(item => {
-            console.log('\t', item.name, item.host, item.identityFile)
+            console.log('\t', item.name, `${item.user}@${item.host}`, (item.port && item.port !== 22) ? item.port : '', item.identityFile)
         });
     }
     return [configAtLocal, configAtRemote];
@@ -324,6 +326,13 @@ const commands = new Commands()
         name: 'region',
         type: 'string',
         comment: 'oss region',
+    })
+    .addParam({
+        name: 'force',
+        alias: 'f',
+        type: 'boolean',
+        comment: '强制执行',
+        default: false
     })
     .addParam({
         name: 'save',
@@ -458,7 +467,7 @@ const testSshService = async (config: IConfigItem) => {
                         break;
                     }
                     const config = found[0];
-                    
+
                 }
                 break;
             case 'show':
@@ -472,7 +481,7 @@ const testSshService = async (config: IConfigItem) => {
                 }
                 const configName = commands.Args[1];
                 const [configAtLocal, configAtRemote] = await show(commands.Options);
-                r = await putConfig(configAtLocal, configAtRemote, configName);
+                r = await putConfig(configAtLocal, configAtRemote, configName, commands.Options.force);
                 break;
             }
             case 'get': {
@@ -484,7 +493,7 @@ const testSshService = async (config: IConfigItem) => {
                 const configName = commands.Args[1];
                 console.log('下载', configName)
                 const [configAtLocal, configAtRemote] = await show(commands.Options);
-                r = await getConfig(configAtRemote, configAtLocal, configName);
+                r = await getConfig(configAtRemote, configAtLocal, configName, commands.Options.force);
                 break;
             }
         }
